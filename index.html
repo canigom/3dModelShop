@@ -14,7 +14,8 @@
         html, body {
             height: 100%;
             overflow: hidden;
-            background: #0a0a0a;
+            /* Background set to transparent */
+            background: transparent;
         }
 
         #canvas-container {
@@ -34,10 +35,13 @@
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // 1. Transparency enabled in renderer
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x0a0a0a, 1);
+        // 2. Clear alpha set to 0 for full transparency
+        renderer.setClearColor(0x000000, 0); 
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -45,9 +49,9 @@
         controls.dampingFactor = 0.05;
         controls.autoRotate = true;
         controls.autoRotateSpeed = 2.0;
-        controls.enableZoom = true;
-        controls.minDistance = 2;
-        controls.maxDistance = 10;
+        
+        // 3. REMOVE ZOOM FEATURE
+        controls.enableZoom = false; 
 
         // Lights
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -63,15 +67,11 @@
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
         directionalLight.position.set(0, 10, 10);
-        directionalLight.castShadow = true;
         scene.add(directionalLight);
 
         const backLight = new THREE.DirectionalLight(0x8b5cf6, 0.8);
         backLight.position.set(0, 5, -10);
         scene.add(backLight);
-
-        camera.position.set(3, 2, 4);
-        controls.target.set(0, 0, 0);
 
         const loader = new THREE.GLTFLoader();
         const modelUrl = 'https://raw.githubusercontent.com/Anonoums/sellauth-models/main/ak47_rust.glb';
@@ -80,14 +80,24 @@
             modelUrl,
             function(gltf) {
                 const model = gltf.scene;
+                
+                // Calculate bounding box
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
+                
+                // Center the model
                 model.position.sub(center);
+                
+                // 4. ADJUST CAMERA TO "FIT" THE MODEL
+                // This makes the 'border' as tight to the gun as possible
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const scale = 3 / maxDim;
-                model.scale.multiplyScalar(scale);
-
+                const fov = camera.fov * (Math.PI / 180);
+                let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                
+                // Add a tiny bit of padding (1.1 multiplier) so it's not touching the edges
+                camera.position.set(0, 0, cameraZ * 1.1);
+                
                 model.traverse(function(child) {
                     if (child.isMesh) {
                         child.castShadow = true;
@@ -96,13 +106,10 @@
                 });
                 scene.add(model);
 
-                camera.position.set(4, 2, 4);
-                camera.lookAt(0, 0, 0);
                 controls.target.set(0, 0, 0);
+                controls.update();
             },
-            function(progress) {
-                console.log('Loading: ' + Math.round(progress.loaded / progress.total * 100) + '%');
-            },
+            undefined,
             function(error) {
                 console.error('Error loading model:', error);
             }
