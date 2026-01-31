@@ -11,26 +11,29 @@
             height: 100vh; 
             width: 100vw;
             overflow: hidden; 
-            background: #000; /* Black background like the example */
+            /* Match the navy blue background from your screenshot */
+            background: #0a1428; 
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Inter', 'Arial Black', sans-serif;
         }
 
-        /* Large Background Text */
+        /* Large Background Text - Sized down as requested */
         #background-text {
             position: absolute;
             width: 100%;
             text-align: center;
-            font-size: 10vw;
+            font-size: 8vw; /* Made smaller */
             font-weight: 900;
-            color: #333; /* Dark grey color */
+            color: rgba(255, 255, 255, 0.15); 
             text-transform: uppercase;
-            letter-spacing: -0.2rem;
+            letter-spacing: -0.1rem;
             white-space: nowrap;
             user-select: none;
-            z-index: 1; /* Sits behind the gun */
+            z-index: 1;
+            /* Added slight padding to match the "hero" feel */
+            margin-top: 20px; 
         }
 
         #canvas-container { 
@@ -39,7 +42,7 @@
             left: 0;
             width: 100%; 
             height: 100%; 
-            z-index: 2; /* Sits in front of the text */
+            z-index: 2;
             cursor: grab;
         }
     </style>
@@ -56,9 +59,7 @@
     <script>
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        
-        // Lower FOV makes the gun look more "flat" and cinematic
-        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -68,18 +69,14 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 2.5;
-        
-        // Zoom is disabled to keep the size consistent
+        controls.autoRotateSpeed = 2.0;
         controls.enableZoom = false; 
 
-        // Lighting to make the metal pop
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        const light1 = new THREE.DirectionalLight(0xffffff, 1.2);
-        light1.position.set(5, 5, 5);
-        scene.add(light1);
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
 
         const loader = new THREE.GLTFLoader();
         const modelUrl = 'https://raw.githubusercontent.com/Anonoums/sellauth-models/main/ak47_rust.glb';
@@ -92,15 +89,17 @@
             const center = box.getCenter(new THREE.Vector3());
             model.position.sub(center);
             
-            // SMALLER GUN: 
-            // Setting scale significantly lower to match your picture
-            model.scale.set(0.45, 0.45, 0.45); 
+            // 1. MAKE GUN SMALLER: 0.35 scale
+            model.scale.set(0.35, 0.35, 0.35); 
+            
+            // 2. PULL DOWN A BIT: Shift Y-axis slightly to align with text center
+            model.position.y -= 0.15; 
             
             scene.add(model);
 
-            // Positioning camera to look directly at the side
-            camera.position.set(0, 0, 8); 
-            controls.target.set(0, 0, 0);
+            // Set camera distance for the new smaller scale
+            camera.position.set(0, 0, 7); 
+            controls.target.set(0, -0.15, 0); // Keep rotation focused on the new position
         });
 
         function animate() {
