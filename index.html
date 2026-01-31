@@ -3,39 +3,34 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Model Viewer with Text</title>
+    <title>3D Model Viewer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        html, body { 
-            height: 100%; 
+        body { 
+            height: 100vh; 
+            width: 100vw;
             overflow: hidden; 
-            background: transparent;
-            font-family: 'Arial Black', sans-serif;
-        }
-
-        #wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
+            background: #000; /* Black background like the example */
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: 'Inter', 'Arial Black', sans-serif;
         }
 
-        /* The text background inspired by your image */
+        /* Large Background Text */
         #background-text {
             position: absolute;
             width: 100%;
             text-align: center;
-            font-size: 12vw; /* Scales with screen size */
+            font-size: 10vw;
             font-weight: 900;
-            color: rgba(255, 255, 255, 0.15); /* Faded grey/white look */
+            color: #333; /* Dark grey color */
             text-transform: uppercase;
-            letter-spacing: 0.5rem;
+            letter-spacing: -0.2rem;
             white-space: nowrap;
             user-select: none;
-            z-index: 1;
+            z-index: 1; /* Sits behind the gun */
         }
 
         #canvas-container { 
@@ -44,15 +39,15 @@
             left: 0;
             width: 100%; 
             height: 100%; 
-            z-index: 2; /* Sits in front of text */
+            z-index: 2; /* Sits in front of the text */
+            cursor: grab;
         }
     </style>
 </head>
 <body>
-    <div id="wrapper">
-        <div id="background-text">Take action today!</div>
-        <div id="canvas-container"></div>
-    </div>
+
+    <div id="background-text">Take action today!</div>
+    <div id="canvas-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -61,24 +56,30 @@
     <script>
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // Lower FOV makes the gun look more "flat" and cinematic
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
         
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(0x000000, 0); 
+        renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 3.0;
-        controls.enableZoom = false; // Zoom still disabled as requested
+        controls.autoRotateSpeed = 2.5;
+        
+        // Zoom is disabled to keep the size consistent
+        controls.enableZoom = false; 
 
-        // Lighting
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        const light = new THREE.DirectionalLight(0xffffff, 1.5);
-        light.position.set(5, 5, 5);
-        scene.add(light);
+        // Lighting to make the metal pop
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const light1 = new THREE.DirectionalLight(0xffffff, 1.2);
+        light1.position.set(5, 5, 5);
+        scene.add(light1);
 
         const loader = new THREE.GLTFLoader();
         const modelUrl = 'https://raw.githubusercontent.com/Anonoums/sellauth-models/main/ak47_rust.glb';
@@ -91,16 +92,15 @@
             const center = box.getCenter(new THREE.Vector3());
             model.position.sub(center);
             
-            // MAKE THE GUN SMALLER
-            // Reducing scale to 0.6 of its previous size
-            model.scale.set(0.6, 0.6, 0.6); 
+            // SMALLER GUN: 
+            // Setting scale significantly lower to match your picture
+            model.scale.set(0.45, 0.45, 0.45); 
             
             scene.add(model);
 
-            // Adjust camera distance
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            camera.position.set(0, 0, maxDim * 1.5); 
+            // Positioning camera to look directly at the side
+            camera.position.set(0, 0, 8); 
+            controls.target.set(0, 0, 0);
         });
 
         function animate() {
@@ -109,7 +109,7 @@
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
