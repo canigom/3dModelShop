@@ -11,7 +11,6 @@
             height: 100vh; 
             width: 100vw;
             overflow: hidden; 
-            /* Matching that specific deep navy blue from your top bar */
             background: #0a1428; 
             display: flex;
             align-items: center;
@@ -19,20 +18,19 @@
             font-family: 'Inter', 'Arial Black', sans-serif;
         }
 
-        /* Smaller Background Text */
+        /* Text made bigger as requested */
         #background-text {
             position: absolute;
             width: 100%;
             text-align: center;
-            font-size: 6vw; /* Reduced from 8vw */
+            font-size: 9vw; 
             font-weight: 900;
-            color: rgba(255, 255, 255, 0.1); /* Subtle transparency */
+            color: rgba(255, 255, 255, 0.07); 
             text-transform: uppercase;
-            letter-spacing: -0.05rem;
+            letter-spacing: -0.1rem;
             white-space: nowrap;
             user-select: none;
             z-index: 1;
-            /* Anchored to help alignment */
             top: 50%;
             transform: translateY(-50%);
         }
@@ -44,7 +42,6 @@
             width: 100%; 
             height: 100%; 
             z-index: 2;
-            cursor: grab;
         }
     </style>
 </head>
@@ -73,9 +70,14 @@
         controls.autoRotateSpeed = 2.0;
         controls.enableZoom = false; 
 
-        // Balanced Lighting
+        // LOCK VERTICAL MOVEMENT (Only left/right allowed)
+        // Setting both to 90 degrees (Math.PI / 2) locks the Y-axis
+        controls.minPolarAngle = Math.PI / 2;
+        controls.maxPolarAngle = Math.PI / 2;
+
+        // Lighting
         scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.6);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
         dirLight.position.set(5, 5, 5);
         scene.add(dirLight);
 
@@ -85,25 +87,21 @@
         loader.load(modelUrl, function(gltf) {
             const model = gltf.scene;
             
-            // Initial centering
             const box = new THREE.Box3().setFromObject(model);
             const center = box.getCenter(new THREE.Vector3());
             model.position.sub(center);
             
-            // 1. MAKE EVERYTHING SMALLER
-            // Scaling down to 0.25 (previous was 0.35)
-            model.scale.set(0.25, 0.25, 0.25); 
+            // Smaller gun scale
+            model.scale.set(0.22, 0.22, 0.22); 
             
-            // 2. MOVE DOWN ON Y-AXIS
-            // Pushing it lower to sit neatly "under" or centered against the text
-            model.position.y -= 0.45; 
+            // Align gun precisely on the text center
+            // Adjust this slightly if the gun looks too high or low relative to your text font
+            model.position.y = 0; 
             
             scene.add(model);
 
-            // Camera positioning to fit the smaller model
             camera.position.set(0, 0, 8); 
-            // Target the lower position so rotation stays centered on the model
-            controls.target.set(0, -0.45, 0); 
+            controls.target.set(0, 0, 0); 
         });
 
         function animate() {
