@@ -5,23 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Model Viewer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            height: 100%;
-            overflow: hidden;
-            /* Background set to transparent */
-            background: transparent;
-        }
-
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: transparent; }
+        #canvas-container { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -34,44 +20,34 @@
     <script>
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
         
-        // 1. Transparency enabled in renderer
+        // Lower FOV (35) creates a more "hero" shot look like your example
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // 2. Clear alpha set to 0 for full transparency
-        renderer.setClearColor(0x000000, 0); 
+        renderer.setClearColor(0x000000, 0); // Fully transparent background
         container.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
         controls.autoRotate = true;
         controls.autoRotateSpeed = 2.0;
         
-        // 3. REMOVE ZOOM FEATURE
+        // FEATURE REMOVED: User cannot zoom in or out
         controls.enableZoom = false; 
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // Lighting setup to match the high-contrast look of the example
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
-        const pointLight1 = new THREE.PointLight(0x3b82f6, 3, 100);
-        pointLight1.position.set(5, 5, 5);
-        scene.add(pointLight1);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2);
+        mainLight.position.set(5, 5, 5);
+        scene.add(mainLight);
 
-        const pointLight2 = new THREE.PointLight(0xff6b6b, 2, 100);
-        pointLight2.position.set(-5, -3, 5);
-        scene.add(pointLight2);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        directionalLight.position.set(0, 10, 10);
-        scene.add(directionalLight);
-
-        const backLight = new THREE.DirectionalLight(0x8b5cf6, 0.8);
-        backLight.position.set(0, 5, -10);
-        scene.add(backLight);
+        const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        rimLight.position.set(-5, 2, -5);
+        scene.add(rimLight);
 
         const loader = new THREE.GLTFLoader();
         const modelUrl = 'https://raw.githubusercontent.com/Anonoums/sellauth-models/main/ak47_rust.glb';
@@ -81,48 +57,29 @@
             function(gltf) {
                 const model = gltf.scene;
                 
-                // Calculate bounding box
+                // Calculate size to fit the frame
                 const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
                 
-                // Center the model
-                model.position.sub(center);
-                
-                // 4. ADJUST CAMERA TO "FIT" THE MODEL
-                // This makes the 'border' as tight to the gun as possible
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const fov = camera.fov * (Math.PI / 180);
-                let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-                
-                // Add a tiny bit of padding (1.1 multiplier) so it's not touching the edges
-                camera.position.set(0, 0, cameraZ * 1.1);
-                
-                model.traverse(function(child) {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
+                model.position.sub(center); // Center the model
                 scene.add(model);
 
+                // Position camera for a side-profile view like the example
+                // We calculate the distance based on the model size so it fills the "border"
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const distance = maxDim * 1.2; 
+                
+                // Set camera to side-view (Z axis)
+                camera.position.set(0, 0, distance);
                 controls.target.set(0, 0, 0);
                 controls.update();
-            },
-            undefined,
-            function(error) {
-                console.error('Error loading model:', error);
             }
         );
 
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
-
-            const time = Date.now() * 0.001;
-            pointLight1.intensity = 3 + Math.sin(time) * 0.5;
-            pointLight2.intensity = 2 + Math.cos(time * 0.7) * 0.3;
-
             renderer.render(scene, camera);
         }
 
